@@ -3,7 +3,7 @@
 ## The image will be pushed at taslanidis/gvirtus-dependencies:cuda12.6.3-cudnn-ubuntu22.04 using the `make docker-build-push-dev` command.
 
 FROM nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
-RUN apt update && apt install -y --no-install-recommends \
+RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends \
     build-essential \
     libxmu-dev \
     libxi-dev \
@@ -15,6 +15,7 @@ RUN apt update && apt install -y --no-install-recommends \
     libgtest-dev \
     liblz4-dev \
     cmake \
+    nvidia-driver-550 \
     && rm -rf /var/lib/apt/lists/*
 
 ENV GVIRTUS_HOME=/usr/local/gvirtus

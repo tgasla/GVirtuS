@@ -1,0 +1,52 @@
+/*
+ *  * gVirtuS -- A GPGPU transparent virtualization component.
+ *   *
+ *    * Copyright (C) 2009-2010  The University of Napoli Parthenope at Naples.
+ *     *
+ *      * This file is part of gVirtuS.
+ *       *
+ *        * gVirtuS is free software; you can redistribute it and/or modify
+ *         * it under the terms of the GNU General Public License as published by
+ *          * the Free Software Foundation; either version 2 of the License, or
+ *           * (at your option) any later version.
+ *            *
+ *             * gVirtuS is distributed in the hope that it will be useful,
+ *              * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *               * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *                * GNU Lesser General Public License for more details.
+ *                 *
+ *                  * You should have received a copy of the GNU General Public License
+ *                   * along with gVirtuS; if not, write to the Free Software
+ *                    * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *                     *
+ *                      * Written by: Theodoros Aslanidis <theodoros.aslanidis@ucdconnect.ie>,
+ *                       *            Department of Computer Science, University College Dublin
+ *                        */
+
+
+#include "NvmlFrontend.h"
+
+using namespace std;
+
+extern "C" nvmlReturn_t nvmlSystemGetCudaDriverVersion_v2 ( int* cudaDriverVersion )
+{
+    NvmlFrontend::Prepare();    
+    NvmlFrontend::Execute("nvmlSystemGetCudaDriverVersion_v2");
+    if (NvmlFrontend::Success())
+    {
+        int *cudaDriverVersion_backend = NvmlFrontend::GetOutputHostPointer<int>();
+        std::memcpy(cudaDriverVersion, cudaDriverVersion_backend, sizeof(int));
+    }
+    return NvmlFrontend::GetExitCode();
+}
+
+extern "C" nvmlReturn_t nvmlSystemGetDriverVersion ( char* version, unsigned int length ){
+    NvmlFrontend::Prepare();
+    NvmlFrontend::AddVariableForArguments(length);
+    NvmlFrontend::Execute("nvmlSystemGetDriverVersion");
+    if (NvmlFrontend::Success()) {
+        char *version_backend = NvmlFrontend::GetOutputHostPointer<char>();
+        std::memcpy(version, version_backend, length);
+    }
+    return NvmlFrontend::GetExitCode();
+}

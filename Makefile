@@ -34,7 +34,7 @@ run-gvirtus-backend-dev:
 		-v ./examples:/gvirtus/examples/ \
 		--entrypoint /entrypoint.sh \
 		--name gvirtus \
-		--runtime=nvidia \
+		--gpus all \
 		taslanidis/gvirtus-dependencies:cuda12.6.3-cudnn-ubuntu22.04
 
 run-gvirtus-tests:

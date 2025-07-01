@@ -16,7 +16,8 @@
         "cufft",
         "cusolver",
         "cusparse",
-        "nvrtc"
+        "nvrtc",
+        "nvml"
       ]
     }
   ],
