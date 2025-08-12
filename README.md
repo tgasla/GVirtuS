@@ -314,11 +314,78 @@ make docker-build-dev-local
 make run-gvirtus-dev
 ```
 
+This command launches a Docker container and mounts your local repository into it. Any changes you make to your files on your host machine will be instantly available inside the container, enabling rapid development and testing without needing to rebuild the image.
+
+Reminder: After creating the GVirtuS backend container, you can immediately launch the GVirtuS backend as described above, or make any configuration or/and environment variable changes before starting it. The `LD_LIBRARY_PATH` is already set up correctly for the backend, so you do not need to change it.
+
 ## Run the GVirtuS image without GPU access (GVirtuS frontend)
 
 ```bash
 make run-gvirtus-dev-no-gpu
 ```
+
+After launching a GVirtuS frontend, you must set the `LD_LIBRARY_PATH` to include the frontend libraries:
+
+```bash
+export LD_LIBRARY_PATH=${GVIRTUS_HOME}/lib/frontend:${LD_LIBRARY_PATH}
+```
+
+This is necessary because the Docker image (see [Dockerfile](/docker/dev/Dockerfile)) sets `LD_LIBRARY_PATH` to include only `${GVIRTUS_HOME}/lib`, which is sufficient only for the backend. The frontend also requires `${GVIRTUS_HOME}/lib/frontend` in the path to function correctly.
+
+# Method 4: 🧪 Experimental/Preliminary Debugging
+
+For even faster debugging, you can run both the GVirtuS backend and frontend inside the same Docker container. This approach simplifies setup since you only need one container instead of two.
+
+**Workflow:**
+
+1. **Start the container (backend session):**
+    Open a terminal and run:
+    ```bash
+    make run-gvirtus-dev
+    ```
+    Use this shell for the GVirtuS backend. Configure (if needed) and launch as described above.
+
+2. **Attach a second shell (frontend session):**
+    In another terminal, attach to the same running container:
+    ```bash
+    make attach-gvirtus-dev
+    ```
+    Use this shell for the GVirtuS frontend. Configure (if needed), download and install dependencies (if any) and run your application.
+
+> [!IMPORTANT]
+> The backend and frontend require different `LD_LIBRARY_PATH` settings:
+> - **Backend:**  
+>   ```bash
+>   export LD_LIBRARY_PATH=${GVIRTUS_HOME}/lib
+>   ```
+> - **Frontend:**  
+>   ```bash
+>   export LD_LIBRARY_PATH=${GVIRTUS_HOME}/lib:${GVIRTUS_HOME}/lib/frontend
+>   ```
+> By default, the developer Docker image sets `LD_LIBRARY_PATH` for the backend only (see [Dockerfile](/docker/dev/Dockerfile)). In your frontend session, update it as [shown above](#run-the-gvirtus-image-without-gpu-access-gvirtus-frontend).
+
+**Testing and Examples:**
+- To run unit tests in the frontend session:
+  ```bash
+  cd /gvirtus/build
+  ctest --output-on-failure
+  ```
+- To try GVirtuS [examples](/examples/):
+  1. Ensure the backend is running in one shell.
+  2. In the frontend shell, `cd` to an example directory.
+  3. Install dependencies (usually with `./setup.sh`).
+  4. Run the example (usually with `./run.sh`).
+
+> [!CAUTION]
+> Running both backend and frontend in the same container gives the frontend direct GPU access. This can lead to misleading results (an example may work in this setup but fail when the frontend does **not** have GPU access). Use this method for quick initial testing only.
+
+> To verify your application works without GPU access, always test using a frontend container started with:
+> ```bash
+> make run-gvirtus-dev-no-gpu
+> ```
+
+> [!NOTE]
+> Not all [examples](/examples/) have been tested with a frontend that does not have GPU access. Some examples may not function correctly in this scenario.
 
 These sections contain information that also apply to the Docker installation:
 - [Setup GVirtuS Environment Variables](#setup-the-gvirtus-environment-variables)
@@ -351,15 +418,7 @@ make run-gvirtus-tests
 
 To add new tests, simply place your test code in any existing .cu file inside the tests directory. You can also create new .cu files if you wish; just make sure to include them as source files in [tests/CMakeLists.txt](tests/CMakeLists.txt#L24).
 
-## Updating and Restarting
-
 After making local changes to the GVirtuS source or tests, you can re-run the `make run-gvirtus-tests` command.
-
-> [!NOTE]
-> The `make run-gvirtus-dev-local` command starts a Docker container with all necessary GVirtuS dependencies and mounts your local repository files required. This means your local changes are automatically used inside the container, making development and testing fast and efficient. 
-
-> [!NOTE]
-> The `make run-gvirtus-tests` command does **not** start a new container. Instead, it opens a new shell inside the already running backend container and executes the GVirtuS tests there.
 
 # ⚠️ Disclaimers
 
