@@ -8,7 +8,7 @@ The GPU Virtualization Service (GVirtuS) presented in this work tries to fill th
 
 You can view the full list of all GVirtuS published papers in [CITATIONS](CITATIONS.md).
 
-# Install from Source Directly on a Host Machine
+# Method 1: 🧰 Install from Source Directly on a Host Machine
 
 ## Prerequisites
 
@@ -85,6 +85,10 @@ and
 sed -i 's/"port": "9999"/"port": "DESIRED_PORT_NUMBER"/' ${GVIRTUS_HOME}/etc/properties.json
 ```
 
+Similarly, you can modify other configuration options in `properties.json`, such as the communication protocol used between the GVirtuS backend and frontend, or specify which plugins to be loaded.
+
+If you prefer editing the file manually, you can use text editors like `vim` or `nano`. Note that these editors are not pre-installed in the Docker containers, so you need to install them first if required.
+
 ## Configure and Run the GVirtuS backend
 
 First, set up the `LD_LIBRARY_PATH` environment variable:
@@ -93,7 +97,7 @@ First, set up the `LD_LIBRARY_PATH` environment variable:
 export LD_LIBRARY_PATH=${GVIRTUS_HOME}/lib:${LD_LIBRARY_PATH}
 ```
 
-Then, to run the GVirtuS backend on a machine that has access to a physical GPU:
+Then, to run the GVirtuS backend (on a machine that has access to a physical GPU):
 
 ```bash
 ${GVIRTUS_HOME}/bin/gvirtus_backend ${GVIRTUS_HOME}/etc/properties.json
@@ -126,9 +130,9 @@ LD_PRELOAD=$(echo ${GVIRTUS_HOME}/lib/frontend/*.so | tr ' ' ':') python3 app.py
 LD_PRELOAD=$(echo ${GVIRTUS_HOME}/lib/frontend/*.so | tr ' ' ':') /usr/bin/python3 app.py
 ```
 
-# 🐳 Use the Official GVirtuS Docker Image
+# Method 2: 🐳 Use the Official GVirtuS Docker Image (Recommended)
 
-GVirtuS has official Docker images in Docker Hub for `linux/amd64` and `linux/arm64` platforms. You can use them to accelerate your workflow. Follow the instructions below:
+GVirtuS provides official Docker images on [Docker Hub](https://hub.docker.com/u/gvirtus) for both `linux/amd64` and `linux/arm64` platforms. Using these images is the fastest and most reliable way to accelerate your workflow, especially if you have fixed applications that you set up once and use repeatedly.
 
 ## Prerequisites
 
@@ -210,7 +214,7 @@ docker run -it --rm --name gvirtus-app gvirtus-app
 
 For example, a Dockerfile for a minimal pytorch application is given below:
 
-```bash
+```Dockerfile
 # Dockerfile
 
 FROM gvirtus/gvirtus:cuda12.6.3-cudnn-ubuntu22.04
@@ -226,6 +230,16 @@ RUN sed -i 's/"port": "9999"/"port": "<YOUR_BACKEND_PORT>"/' ${GVIRTUS_HOME}/etc
 
 ENTRYPOINT ["/bin/bash", "-c", "LD_PRELOAD=$(echo ${GVIRTUS_HOME}/lib/frontend/*.so | tr ' ' ':') /usr/bin/python3 /test_pytorch.py"]
 ```
+
+Note that some libraries may need to be built with specific flags, such as setting the CUDA library path to the GVirtuS libraries path and disabling the use of the static cudart library.
+
+For example, when building libraries like OpenCV or OpenPose (and possibly others), you should add the following flag to your CMake command:
+
+```bash
+-D CUDA_USE_STATIC_CUDA_RUNTIME=OFF
+```
+
+Additionally, as shown in the Dockerfile example above, some libraries require you to explicitly enable CUDA support during installation. By default, CUDA support may be disabled to reduce installation time and resource usage, so be sure to specify the appropriate options if you need GPU acceleration.
 
 The `test_pytorch.py` is also given below:
 
@@ -245,12 +259,18 @@ output = model(x)
 print(output)
 ```
 
-You can also write a simple bash script that will act as your application's entrypoint and pass it on the `docker run` command using the `--entrypoint` flag.
+You can also create a simple bash script to serve as your application's entrypoint and specify it with the `--entrypoint` flag in the `docker run` command.
 
-# Install from Source using Docker
+If you are actively developing your application and want to avoid rebuilding the Docker image every time you make code changes, use the `-v` mount volume option with `docker run`. This allows you to mount your source code directory into the container, making development more efficient.
+
+If the GVirtuS backend server address or port number changes frequently, hardcoding these values in your Docker frontend image can be inconvenient. Instead, create a `properties.json` configuration file on your host machine and mount it into the container using the `-v` flag, as described for the backend [above](#change-the-gvirtus-backend-server-address-and-port-number-if-needed). This approach keeps your configuration flexible and easy to update.
+
+# Method 3: 🧰 🐳 Install from Source in a Docker Container (Debugging/Interactive Mode)
+
+This method is ideal for development and debugging GVirtuS. It lets you build and run GVirtuS from source interactively inside a Docker container, making it easy to test code changes, troubleshoot issues, and experiment with the GVirtuS environment in real time.
 
 ## Prerequisites
-* [Docker](https://docs.docker.com/engine/install/): _Ensure Docker Engine is properly installed and running. Latest verified working version **v26.1.3**_
+* [Docker](https://docs.docker.com/engine/install/): _Ensure Docker Engine is properly installed and running_
     - On Ubuntu:
         ```bash
         sudo apt install -y docker.io
@@ -259,20 +279,26 @@ You can also write a simple bash script that will act as your application's entr
         ```
 
 * [Docker Buildx Plugin](https://github.com/docker/buildx#installing): _Used in the Makefile targets that build the GVirtuS docker images_
-    - On Ubuntu: `sudo apt install -y docker-buildx-plugin`
+    - On Ubuntu: 
+        ```bash
+        sudo apt install -y docker-buildx-plugin
+        ```
 
 * [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html): _Install only on GPU nodes that will run the GVirtuS backend_
-    - On Ubuntu: `sudo apt install -y nvidia-container-toolkit`
+    - On Ubuntu:
+        ```bash
+        sudo apt install -y nvidia-container-toolkit
+        ```
 
 ## `git clone` the **GVirtuS** main repository: 
 
-```
+```bash
 git clone https://github.com/tgasla/gvirtus.git
 ```
 
 ## `cd` into the repo directory:
 
-```
+```bash
 cd gvirtus
 ```
 

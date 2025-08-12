@@ -61,7 +61,6 @@ run-gvirtus-dev-no-gpu:
 		-v ./CMakeLists.txt:/gvirtus/CMakeLists.txt \
 		-v ./docker/dev/build.sh:/build.sh \
 		-v ./examples:/gvirtus/examples/ \
-		--network host \
 		--entrypoint /build.sh \
 		--name gvirtus-no-gpu \
 		--shm-size=8G \
