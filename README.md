@@ -332,7 +332,7 @@ export LD_LIBRARY_PATH=${GVIRTUS_HOME}/lib/frontend:${LD_LIBRARY_PATH}
 
 This is necessary because the Docker image (see [Dockerfile](/docker/dev/Dockerfile)) sets `LD_LIBRARY_PATH` to include only `${GVIRTUS_HOME}/lib`, which is sufficient only for the backend. The frontend also requires `${GVIRTUS_HOME}/lib/frontend` in the path to function correctly.
 
-# Method 4: 🧪 Experimental/Preliminary Debugging
+# Method 4: 🧪 Rapid Local Debugging (Single Container) - ⚠️ Use with Caution
 
 For even faster debugging, you can run both the GVirtuS backend and frontend inside the same Docker container. This approach simplifies setup since you only need one container instead of two.
 
