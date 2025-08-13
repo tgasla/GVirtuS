@@ -1,13 +1,13 @@
 from vllm import LLM, SamplingParams
 
-model_name = "Qwen/Qwen3-4B"
+model_name = "Qwen/Qwen3-8B"
 llm = LLM(
     model=model_name,
     dtype="float16",
-    max_model_len=512,
-    # max_num_seqs=8,
-    # gpu_memory_utilization=0.65,
-    # max_num_batched_tokens=256
+    max_model_len=256,
+    max_num_seqs=256,
+    gpu_memory_utilization=1.0,
+    max_num_batched_tokens=256
 )
 
 prompt = "Give me a short introduction to large language model."
