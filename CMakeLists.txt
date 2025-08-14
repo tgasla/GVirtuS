@@ -2,6 +2,16 @@ cmake_minimum_required(VERSION 3.18)
 cmake_policy(SET CMP0104 NEW)
 
 project(GVirtuS LANGUAGES CXX)
+
+# ===== LZ4 check & link =====
+find_package(LZ4 QUIET)
+if(LZ4_FOUND)
+    link_libraries(LZ4::LZ4)
+else()
+    find_library(LZ4_LIB lz4 REQUIRED)
+    link_libraries(${LZ4_LIB})
+endif()
+
 enable_testing()
 
 # Set required CUDA architectures
@@ -32,6 +42,7 @@ add_custom_command(
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
+# ===== gvirtus-common =====
 add_library(gvirtus-common SHARED
     ${CMAKE_CURRENT_BINARY_DIR}/include/nlohmann/json.hpp
     src/common/Decoder.cpp
@@ -46,11 +57,7 @@ add_library(gvirtus-common SHARED
     src/common/SignalState.cpp
     src/common/Util.cpp
 )
-
 target_link_libraries(gvirtus-common stdc++fs ${CMAKE_DL_LIBS} ${LIBLOG4CPLUS} rdmacm ibverbs)
-
-##target_include_directories(gvirtus-common PRIVATE /usr/include/infiniband)
-##target_include_directories(gvirtus-common PRIVATE /usr/include/rdma)
 
 gvirtus_install_target(gvirtus-common)
 install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/nlohmann DESTINATION ${GVIRTUS_HOME}/include)
@@ -61,11 +68,13 @@ if (LOG4CPLUS_EXTERNALLY_DOWNLOADED)
 endif()
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/etc DESTINATION ${GVIRTUS_HOME})
 
+# ===== gvirtus-communicators =====
 add_library(gvirtus-communicators SHARED
     src/communicators/Buffer.cpp
     src/communicators/CommunicatorFactory.cpp
     src/communicators/Endpoint_Tcp.cpp
     src/communicators/Endpoint_Rdma.cpp
+    src/communicators/Endpoint_Hybrid.cpp
     src/communicators/EndpointFactory.cpp
     src/communicators/rdma/ktmrdma.cpp
     src/communicators/Result.cpp
@@ -80,40 +89,81 @@ target_link_libraries(gvirtus-communicators-tcp gvirtus-communicators)
 gvirtus_install_target(gvirtus-communicators-tcp)
 
 ## IB COMMUNICATOR
-## TODO: PROPERLY SETUP CMAKE AND PROJECT TO USE RDMA
 add_library(gvirtus-communicators-ib SHARED
     src/communicators/rdma/ktmrdma.cpp
     src/communicators/rdma/RdmaCommunicator.cpp
 )
-##target_include_directories(gvirtus-communicators-ib PUBLIC /usr/include/infiniband /usr/include/rdma /src/communicators/rdma)
 target_link_libraries(gvirtus-communicators-ib gvirtus-communicators rdmacm ibverbs)
 gvirtus_install_target(gvirtus-communicators-ib)
 
+## HYBRID COMMUNICATOR
+add_library(gvirtus-communicators-hybrid SHARED
+    src/communicators/hybrid/HybridCommunicator.cpp
+)
+target_include_directories(gvirtus-communicators-hybrid
+    PUBLIC
+        ${PROJECT_SOURCE_DIR}/src
+)
+target_link_libraries(gvirtus-communicators-hybrid
+    gvirtus-communicators
+    gvirtus-communicators-tcp
+    gvirtus-communicators-ib
+)
+gvirtus_install_target(gvirtus-communicators-hybrid)
+
+# ===== FRONTEND =====
 add_library(gvirtus-frontend SHARED
-    src/frontend/Frontend.cpp)
-target_link_libraries(gvirtus-frontend gvirtus-communicators Threads::Threads lz4)
+    src/frontend/Frontend.cpp
+)
+target_include_directories(gvirtus-frontend
+    PRIVATE
+        ${PROJECT_SOURCE_DIR}/src
+)
+target_link_libraries(gvirtus-frontend
+    PRIVATE
+        gvirtus-communicators
+        gvirtus-communicators-hybrid
+        Threads::Threads
+        lz4
+)
 gvirtus_install_target(gvirtus-frontend)
 
+# ===== BACKEND =====
 add_executable(gvirtus-backend
     src/backend/Backend.cpp
     src/backend/main.cpp
     src/backend/Process.cpp
-    src/backend/Property.cpp)
-target_link_libraries(gvirtus-backend gvirtus-communicators Threads::Threads rdmacm ibverbs)
+    src/backend/Property.cpp
+)
+target_include_directories(gvirtus-backend
+    PRIVATE
+        ${PROJECT_SOURCE_DIR}/src
+)
+target_link_libraries(gvirtus-backend
+    PRIVATE
+        gvirtus-communicators
+        gvirtus-communicators-hybrid
+        Threads::Threads
+        rdmacm
+        ibverbs
+)
 gvirtus_install_target(gvirtus-backend)
 
-add_subdirectory(plugins/cudart) # Assuming this plugin is always available
-add_subdirectory(plugins/cudadr) # CUDA driver is not part of CUDA toolkit. Internally, we check if cuda drivers are available
-add_subdirectory(plugins/cudnn) # CUDNN is not part of CUDA toolkit. Internally, we check if cudnn is available
-add_subdirectory(plugins/nvml) # typically bundled with the NVIDIA GPU driver
+# ===== Plugins =====
+add_subdirectory(plugins/cudart)
+add_subdirectory(plugins/cudadr)
+add_subdirectory(plugins/cudnn) 
 
-maybe_add_cuda_plugin(cublas plugins/cublas) # part of CUDA toolkit
-maybe_add_cuda_plugin(cufft plugins/cufft) # part of CUDA toolkit
-maybe_add_cuda_plugin(cusolver plugins/cusolver) # part of CUDA toolkit
-maybe_add_cuda_plugin(cusparse plugins/cusparse) # part of CUDA toolkit
-maybe_add_cuda_plugin(curand plugins/curand) # part of CUDA toolkit
-maybe_add_cuda_plugin(nvrtc plugins/nvrtc) # part of CUDA toolkit
+maybe_add_cuda_plugin(cublas plugins/cublas)
+maybe_add_cuda_plugin(cufft plugins/cufft)
+maybe_add_cuda_plugin(cusolver plugins/cusolver)
+maybe_add_cuda_plugin(cusparse plugins/cusparse)
+maybe_add_cuda_plugin(curand plugins/curand)
+maybe_add_cuda_plugin(nvrtc plugins/nvrtc)
 
+add_subdirectory(plugins/nvml)
+
+# ===== Tests =====
 add_subdirectory(tests)
 
-#add_subdirectory(tools/protocol-generator)
+# add_subdirectory(tools/protocol-generator)

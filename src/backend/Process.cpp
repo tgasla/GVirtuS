@@ -1,46 +1,19 @@
-/**
- * @mainpage gVirtuS - A GPGPU transparent virtualization component
- *
- * @section Introduction
- * gVirtuS tries to fill the gap between in-house hosted computing clusters,
- * equipped with GPGPUs devices, and pay-for-use high performance virtual
- * clusters deployed  via public or private computing clouds. gVirtuS allows an
- * instanced virtual machine to access GPGPUs in a transparent way, with an
- * overhead  slightly greater than a real machine/GPGPU setup. gVirtuS is
- * hypervisor independent, and, even though it currently virtualizes nVIDIA CUDA
- * based GPUs, it is not limited to a specific brand technology. The performance
- * of the components of gVirtuS is assessed through a suite of tests in
- * different deployment scenarios, such as providing GPGPU power to cloud
- * computing based HPC clusters and sharing remotely hosted GPGPUs among HPC
- * nodes.
- *
- * Written By: Carlo Palmieri <carlo.palmieri@uniparthenope.it>,
- *             Department of Applied Science
- *             Giuseppe Coviello <giuseppe.coviello@uniparthenope.it>,
- *             Department of Applied Science
- *             Raffaele Montella <raffaele.montella@uniparthenope.it>,
- *             Department of Science and Technologies
- *             Antonio Mentone <antonio.mentone@uniparthenope.it>,
- *             Department of Science and Technologies
- * Edited By: Mariano Aponte <aponte2001@gmail.com>,
- *            Department of Science and Technologies, University of Naples Parthenope
- *            Theodoros Aslanidis <theodoros.aslanidis@ucdconnect.ie>,
- *            Department of Computer Science, University College Dublin
- */
+#include "gvirtus/backend/Process.h"
 
-#include <gvirtus/backend/Process.h>
 #include <gvirtus/common/JSON.h>
 #include <gvirtus/common/SignalException.h>
 #include <gvirtus/common/SignalState.h>
+#include "communicators/hybrid/HybridCommunicator.h"
+#include <signal.h>
+#include <gvirtus/backend/Process.h>
 #include <pthread.h>
 #include <signal.h>
 #include <unistd.h>
-
 #include <functional>
-#include <iostream>
 #include <thread>
+#include <iostream>
 
-// #define DEBUG
+#define DEBUG
 
 using gvirtus::backend::Process;
 using gvirtus::common::LD_Lib;
@@ -52,10 +25,19 @@ using std::chrono::steady_clock;
 
 using namespace std;
 
-Process::Process(std::shared_ptr<LD_Lib<Communicator, std::shared_ptr<Endpoint>>> communicator,
-                 vector<string> &plugins)
-    : Observable() {
+Process::Process(std::shared_ptr<LD_Lib<Communicator, std::shared_ptr<Endpoint>>> communicator, vector <string> &plugins) : Observable() {
     logger = log4cplus::Logger::getInstance(LOG4CPLUS_TEXT("Process"));
+
+    // Set the logging level
+    log4cplus::LogLevel logLevel = log4cplus::INFO_LOG_LEVEL;
+    char *val = getenv("GVIRTUS_LOGLEVEL");
+
+    std::string logLevelString = (val == NULL ? std::string("") : std::string(val));
+
+    if (!logLevelString.empty()) {
+        logLevel = std::stoi(logLevelString);
+    }
+    logger.setLogLevel(logLevel);
 
     signal(SIGCHLD, SIG_IGN);
     _communicator = communicator;
@@ -63,6 +45,17 @@ Process::Process(std::shared_ptr<LD_Lib<Communicator, std::shared_ptr<Endpoint>>
 }
 
 bool getstring(Communicator *c, string &s) {
+    printf("[getstring] c=%p to_string=%s\n", (void*)c, c?c->to_string().c_str():"<null>");
+
+#ifdef DEBUG
+    // print all to_string info
+    const char* rtti = "<no-rtti>";
+    try { rtti = typeid(*c).name(); } catch (...) {}
+    std::string name;
+    try { name = c->to_string(); } catch (...) { name = "<no to_string()>"; }
+    printf("[getstring] c=%p rtti=%s to_string()=%s\n", (void*)c, rtti, name.c_str());
+#endif
+
     // TODO: FIX LISKOV SUBSTITUTION AND DIPENDENCE INVERSION!!!!!
     if (c->to_string() == "tcpcommunicator") {
         s = "";
@@ -75,25 +68,45 @@ bool getstring(Communicator *c, string &s) {
             s += ch;
         }
         return false;
-    } else if (c->to_string() == "rdmacommunicator") {
+    }
+    else if (c->to_string() == "rdmacommunicator") {
         try {
             s = "";
             size_t size = 30;
-            char *buf = (char *)malloc(size);
+            char *buf = (char *) malloc(size);
             size = c->Read(buf, size);
 
             // if read, return true
             if (size > 0) {
                 s += std::string(buf);
+                printf("append\n");
+                //free(buf);
+                printf("free\n");
                 return true;
             }
-        } catch (const std::exception &e) {
-            cerr << e.what() << endl;
+        }
+        catch (std::string & exc) {
+            cerr << exc;
+        }
+        catch (const char * exc) {
+            cerr << std::string(exc);
         }
         return false;
     }
+else if (c->to_string() == "hybridcommunicator") {
+    s.clear();
+    char ch = 0;
+    // same as tcp/ip, and stop until read /0
+    while (c->Read(&ch, 1) == 1) {
+        if (ch == 0) {
+            return true;            // take the complete routine name
+        }
+        s += ch;
+    }
+    return false;
+}
 
-    throw runtime_error("Communicator getstring read error... Unknown communicator type...");
+    throw "Communicator getstring read error... Unknown communicator type...";
 }
 
 extern std::string getEnvVar(std::string const &key);
@@ -104,67 +117,95 @@ std::string getGVirtuSHome() {
 }
 
 void Process::Start() {
-    LOG4CPLUS_DEBUG(logger, "[Process " << getpid() << "] Process::Start() called.");
+    LOG4CPLUS_DEBUG(logger, "✓ - [Process " << getpid() << "] Process::Start() called.");
 
     for_each(mPlugins.begin(), mPlugins.end(), [this](const std::string &plug) {
-        std::string gvirtus_home = getGVirtuSHome();
+                 std::string gvirtus_home = getGVirtuSHome();
 
-        std::string to_append = "libgvirtus-plugin-" + plug + ".so";
-        LOG4CPLUS_DEBUG(logger, "[Process " << getpid() << "] appending " << to_append << ".");
+                 std::string to_append = "libgvirtus-plugin-" + plug + ".so";
+                 LOG4CPLUS_DEBUG(logger, "✓ - [Process " << getpid() << "] appending " << to_append << ".");
 
-        auto ld_path = fs::path(gvirtus_home + "/lib").append(to_append);
+                 auto ld_path = fs::path(gvirtus_home + "/lib").append(to_append);
 
-        try {
-            auto dl = std::make_shared<LD_Lib<Handler>>(ld_path, "create_t");
-            dl->build_obj();
-            _handlers.push_back(dl);
-        } catch (const std::exception &e) {
-            LOG4CPLUS_ERROR(logger, e.what());
-        }
-    });
+                 try {
+                     auto dl = std::make_shared<LD_Lib<Handler>>(ld_path, "create_t");
+                     dl->build_obj();
+                     _handlers.push_back(dl);
+                 }
+                 catch (const std::string &e) {
+                     LOG4CPLUS_ERROR(logger, e);
+                 }
+             }
+    );
 
     // inserisci i sym dei plugin in h
-    std::function<void(Communicator *)> execute = [this](Communicator *client_comm) {
-        LOG4CPLUS_DEBUG(logger, "[Process " << getpid() << "]"
-                                            << "Process::Start()'s \"execute\" lambda called");
+    std::function<void(Communicator *)> execute = [=](Communicator *client_comm) {
+        LOG4CPLUS_DEBUG(logger, "✓ - [Process " << getpid() << "]" << "Process::Start()'s \"execute\" lambda called");
         // carica i puntatori ai simboli dei moduli in mHandlers
 
         string routine;
         std::shared_ptr<Buffer> input_buffer = std::make_shared<Buffer>();
 
         while (getstring(client_comm, routine)) {
-            LOG4CPLUS_DEBUG(logger, "Received routine " << routine);
+    LOG4CPLUS_DEBUG(logger, "✓ - Received routine " << routine);
 
-            input_buffer->Reset(client_comm);
+    // === before reading buffer, chose the protocol of this round by rountine ===
+    gvirtus::communicators::HybridCommunicator* hybrid = nullptr;
+    if (client_comm && client_comm->to_string() == "hybridcommunicator") {
+        hybrid = dynamic_cast<gvirtus::communicators::HybridCommunicator*>(client_comm);
+    }
+    if (hybrid) {
+        // all those function payload will transfer by RDMA
+        const bool use_rdma =
+            routine.rfind("cudaRegisterFatBinary", 0)== 0 ||
+            routine.rfind("cudaRegisterFatBinaryEnd", 0)== 0 ||
+            routine.rfind("cudaMemcpyAsync", 0) == 0 ||   
+            routine.rfind("cudaMemcpy",      0) == 0;     
 
-            std::shared_ptr<Handler> h = nullptr;
-            for (auto &ptr_el : _handlers) {
-                if (ptr_el->obj_ptr()->CanExecute(routine)) {
-                    h = ptr_el->obj_ptr();
-                    break;
-                }
-            }
-
-            std::shared_ptr<communicators::Result> result;
-            if (h == nullptr) {
-                LOG4CPLUS_ERROR(logger, "[Process " << getpid() << "]: Requested unknown routine '"
-                                                    << routine << "'.");
-                result = std::make_shared<communicators::Result>(-1, std::make_shared<Buffer>());
-            } else {
-                // esegue la routine e salva il risultato in result
-                auto start = steady_clock::now();
-                result = h->Execute(routine, input_buffer);
-                result->TimeTaken(std::chrono::duration_cast<std::chrono::milliseconds>(
-                                      steady_clock::now() - start)
-                                      .count() /
-                                  1000.0);
-            }
-
-            // scrive il risultato sul communicator
-            result->Dump(client_comm);
-            LOG4CPLUS_DEBUG(logger, "[Process " << getpid() << "]: Routine '" << routine
-                                                << "' returned " << result->GetExitCode() << ".");
+        if (use_rdma) {
+            // bytes_hint if >0 ,then trigger the first 8B under TCP moniter.
+            // real payload size after 8B head.
+            hybrid->begin_call(routine, gvirtus::communicators::Transport::RDMA, /*bytes_hint*/ 1);
+        } else {
+            hybrid->begin_call(routine, gvirtus::communicators::Transport::TCP, 0);
         }
+    }
+
+    // now reading buffer：8B from TCP, payload will transfer by the selected protocol
+    input_buffer->Reset(client_comm);
+
+    std::shared_ptr<Handler> h = nullptr;
+    for (auto &ptr_el : _handlers) {
+        if (ptr_el->obj_ptr()->CanExecute(routine)) {
+            h = ptr_el->obj_ptr();
+            break;
+        }
+    }
+
+    std::shared_ptr<communicators::Result> result;
+    if (h == nullptr) {
+        LOG4CPLUS_ERROR(logger, "✖ - [Process " << getpid() << "]: Requested unknown routine " << routine << ".");
+        result = std::make_shared<communicators::Result>(-1, std::make_shared<Buffer>());
+    } else {
+        auto start = steady_clock::now();
+        result = h->Execute(routine, input_buffer);
+        result->TimeTaken(std::chrono::duration_cast<std::chrono::milliseconds>(steady_clock::now() - start).count() / 1000.0);
+    }
+
+    // return info：control the head transfer by TCP，then payload RDMA
+    result->Dump(client_comm);
+
+    // stop this round, and clean all context
+    if (hybrid) {
+        hybrid->end_call();
+    }
+
+    if (result->GetExitCode() != 0 && routine.compare("cudaLaunch")) {
+        LOG4CPLUS_DEBUG(logger, "✓ - [Process " << getpid() << "]: Requested '" << routine << "' routine.");
+        LOG4CPLUS_DEBUG(logger, "✓ - - [Process " << getpid() << "]: Exit Code '" << result->GetExitCode() << "'.");
+    }
+}
+
         Notify("process-ended");
     };
 
@@ -179,6 +220,7 @@ void Process::Start() {
         int pid = 0;
         while (true) {
             Communicator *client = const_cast<Communicator *>(_communicator->obj_ptr()->Accept());
+            printf("[Process] Accept client=%p, comm=%s\n", (void*)client, client?client->to_string().c_str():"<null>");
 
             if (client != nullptr) {
                 //      if ((pid = fork()) == 0) {
@@ -192,17 +234,18 @@ void Process::Start() {
             // check if process received SIGINT
 
             if (common::SignalState::get_signal_state(SIGINT)) {
-                LOG4CPLUS_DEBUG(
-                    logger, "SIGINT received, killing server on [Process " << getpid() << "]...");
+                LOG4CPLUS_DEBUG(logger, "✓ - SIGINT received, killing server on [Process " << getpid() << "]...");
                 break;
             }
+
         }
-    } catch (const std::exception &exc) {
-        LOG4CPLUS_ERROR(logger, "[Process " << getpid() << "]: " << exc.what());
+    }
+    catch (std::string &exc) {
+        LOG4CPLUS_ERROR(logger, "✖ - [Process " << getpid() << "]: " << exc);
     }
 
-    LOG4CPLUS_DEBUG(logger, "Process::Start() returned [Process " << getpid() << "].");
-    // exit(EXIT_SUCCESS);
+    LOG4CPLUS_DEBUG(logger, "✓ - Process::Start() returned [Process " << getpid() << "].");
+    //exit(EXIT_SUCCESS);
 }
 
 Process::~Process() {
