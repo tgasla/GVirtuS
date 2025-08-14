@@ -8,7 +8,7 @@ The GPU Virtualization Service (GVirtuS) presented in this work tries to fill th
 
 You can view the full list of all GVirtuS published papers in [CITATIONS](CITATIONS.md).
 
-# Method 1: 🧰 Install from Source Directly on a Host Machine
+# Method 1: 🧰 Build from Source Directly on a Host Machine
 
 ## Prerequisites
 
@@ -161,7 +161,7 @@ If you want your GVirtuS backend server to listen on a different address or port
 
 - Create a `properties.json` file anywhere in your host machine similar to the one one in `etc/properties.json`.
 - Change the `server_address` and `port` fields as needed and save the file.
-- Then, assuming you run the `docker run` command in the same directory as your `properties.json` file, you can overrive the original `properrties.json` configuration file inside the container by doing:
+- Then, assuming you run the `docker run` command in the same directory as your `properties.json` file, you can overrive the original `properties.json` configuration file inside the container by doing:
 
 ```bash
 docker run -it --rm --name gvirtus-backend --network --runtime nvidia host -v ./properties.json:/usr/local/gvirtus/etc/properties.json gvirtus/gvirtus:cuda12.6.3-cudnn-ubuntu22.04
@@ -265,7 +265,7 @@ If you are actively developing your application and want to avoid rebuilding the
 
 If the GVirtuS backend server address or port number changes frequently, hardcoding these values in your Docker frontend image can be inconvenient. Instead, create a `properties.json` configuration file on your host machine and mount it into the container using the `-v` flag, as described for the backend [above](#change-the-gvirtus-backend-server-address-and-port-number-if-needed). This approach keeps your configuration flexible and easy to update.
 
-# Method 3: 🧰 🐳 Install from Source in a Docker Container (Debugging/Interactive Mode)
+# Method 3: 🧰 🐳 Build from Source in a Docker Container (Debugging/Interactive Mode)
 
 This method is ideal for development and debugging GVirtuS. It lets you build and run GVirtuS from source interactively inside a Docker container, making it easy to test code changes, troubleshoot issues, and experiment with the GVirtuS environment in real time.
 
@@ -282,6 +282,10 @@ This method is ideal for development and debugging GVirtuS. It lets you build an
     - On Ubuntu: 
         ```bash
         sudo apt install -y docker-buildx-plugin
+        ```
+        If the package is not found:
+        ```bash
+        sudo apt install -y docker-buildx
         ```
 
 * [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html): _Install only on GPU nodes that will run the GVirtuS backend_
