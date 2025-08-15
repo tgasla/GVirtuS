@@ -9,11 +9,11 @@
 
 namespace gvirtus::common {
 class MessageDispatcher {
-   public:
-    MessageDispatcher();
-    MessageDispatcher(const MessageDispatcher &orig);
-    virtual ~MessageDispatcher();
+ public:
+  MessageDispatcher();
+  MessageDispatcher(const MessageDispatcher &orig);
+  virtual ~MessageDispatcher();
 
-   private:
+ private:
 };
-}  // namespace gvirtus::common
+}

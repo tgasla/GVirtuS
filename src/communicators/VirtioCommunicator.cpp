@@ -32,55 +32,71 @@
  *
  */
 
-#include "VirtioCommunicator.h"
-
 #include <sys/fcntl.h>
 #include <sys/ioctl.h>
+
 #include <unistd.h>
 
 #include <cstring>
+
+#include "VirtioCommunicator.h"
 
 using namespace std;
 
 namespace gvirtus {
 
-VirtioCommunicator::VirtioCommunicator(const std::string &communicator) {
+  VirtioCommunicator::VirtioCommunicator(const std::string &communicator) {
     const char *deviceptr = strstr(communicator.c_str(), "://") + 3;
     mDevice = string(deviceptr);
-}
+  }
 
-void VirtioCommunicator::Serve() { throw "VirtioCommunicator: cannot Serve"; }
+  void
+  VirtioCommunicator::Serve() {
+    throw "VirtioCommunicator: cannot Serve";
+  }
 
-const Communicator *const VirtioCommunicator::Accept() const {
+  const Communicator *const
+  VirtioCommunicator::Accept() const {
     throw "VirtioCommunicator: cannot Accept";
-}
+  }
 
-void VirtioCommunicator::Connect() {
-    if ((mFd = open(mDevice.c_str(), O_RDWR)) < 0) throw "VirtioCommunicator: cannot open device.";
-}
+  void
+  VirtioCommunicator::Connect() {
+    if ((mFd = open(mDevice.c_str(), O_RDWR)) < 0)
+      throw "VirtioCommunicator: cannot open device.";
+  }
 
-size_t VirtioCommunicator::Read(char *buffer, size_t size) {
+  size_t
+  VirtioCommunicator::Read(char *buffer, size_t size) {
     size_t offset = 0;
     int bytes_read;
     while (offset < size) {
-        bytes_read = read(mFd, buffer + offset, size - offset);
-        if (bytes_read <= 0 && offset == 0) return bytes_read;
-        offset += bytes_read;
+      bytes_read = read(mFd, buffer + offset, size - offset);
+      if (bytes_read <= 0 && offset == 0)
+        return bytes_read;
+      offset += bytes_read;
     }
     return size;
-}
+  }
 
-size_t VirtioCommunicator::Write(const char *buffer, size_t size) {
+  size_t
+  VirtioCommunicator::Write(const char *buffer, size_t size) {
     size_t offset = 0;
     int written;
     while (offset < size) {
-        written = write(mFd, buffer + offset, size - offset);
-        offset += written;
+      written = write(mFd, buffer + offset, size - offset);
+      offset += written;
     }
     return size;
-}
+  }
 
-void VirtioCommunicator::Sync() { fsync(mFd); }
+  void
+  VirtioCommunicator::Sync() {
+    fsync(mFd);
+  }
 
-void VirtioCommunicator::Close() { close(mFd); }
-}  // namespace gvirtus
+  void
+  VirtioCommunicator::Close() {
+    close(mFd);
+  }
+} // namespace gvirtus

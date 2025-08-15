@@ -6,8 +6,8 @@
 namespace gvirtus::common {
 
 class SignalException : public std::runtime_error {
-   public:
-    explicit SignalException(const std::string& message) : std::runtime_error(message) {}
+ public:
+  explicit SignalException(const std::string& message) : std::runtime_error(message) {}
 };
 
-}  // namespace gvirtus::common
+}

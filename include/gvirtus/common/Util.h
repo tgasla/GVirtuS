@@ -37,7 +37,6 @@
 
 #include <cstdlib>
 #include <iostream>
-
 #include "gvirtus-type.h"
 
 namespace gvirtus::common {
@@ -47,25 +46,25 @@ namespace gvirtus::common {
  * binaries".
  */
 class Util {
-   public:
-    Util();
-    Util(const Util &orig);
-    virtual ~Util();
-    static const size_t MarshaledDevicePointerSize = sizeof(void *) * 2 + 3;
-    static const size_t MarshaledHostPointerSize = sizeof(void *) * 2 + 3;
-    static char *MarshalHostPointer(const void *ptr);
-    static void MarshalHostPointer(const void *ptr, char *marshal);
-    static char *MarshalDevicePointer(const void *devPtr);
-    static void MarshalDevicePointer(const void *devPtr, char *marshal);
-    static inline void *UnmarshalPointer(const char *marshal) {
-        return (void *)strtoul(marshal, NULL, 16);
-    }
-    template <class T>
-    static inline pointer_t MarshalPointer(const T ptr) {
-        /*Verify the correctness */
-        return static_cast<pointer_t>(ptr);
-    }
+ public:
+  Util();
+  Util(const Util &orig);
+  virtual ~Util();
+  static const size_t MarshaledDevicePointerSize = sizeof(void *) * 2 + 3;
+  static const size_t MarshaledHostPointerSize = sizeof(void *) * 2 + 3;
+  static char *MarshalHostPointer(const void *ptr);
+  static void MarshalHostPointer(const void *ptr, char *marshal);
+  static char *MarshalDevicePointer(const void *devPtr);
+  static void MarshalDevicePointer(const void *devPtr, char *marshal);
+  static inline void *UnmarshalPointer(const char *marshal) {
+    return (void *) strtoul(marshal, NULL, 16);
+  }
+  template<class T>
+  static inline pointer_t MarshalPointer(const T ptr) {
+    /*Verify the correctness */
+    return static_cast<pointer_t>(ptr);
+  }
 
-   private:
+ private:
 };
-}  // namespace gvirtus::common
+}

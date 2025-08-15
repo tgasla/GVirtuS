@@ -35,11 +35,17 @@
 
 #pragma once
 
+#include <pthread.h>
+#include <sys/syscall.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <map>
+#include <string>
+#include <vector>
+
 #include <gvirtus/common/LD_Lib.h>
 #include <gvirtus/communicators/Buffer.h>
 #include <gvirtus/communicators/Communicator.h>
-
-#include <map>
 
 namespace gvirtus::frontend {
 /**
@@ -63,57 +69,62 @@ namespace gvirtus::frontend {
  * status.
  */
 class Frontend {
-   public:
-    virtual ~Frontend();
+ public:
+  virtual ~Frontend();
 
-    /**
-     * Retrieves the single instance of the Frontend class.
-     *
-     * @param register_var
-     *
-     * @return The instance of the Frontend class.
-     */
-    static Frontend *GetFrontend(communicators::Communicator *c = NULL);
+  /**
+   * Retrieves the single instance of the Frontend class.
+   *
+   * @param register_var
+   *
+   * @return The instance of the Frontend class.
+   */
+  static Frontend *GetFrontend(communicators::Communicator *c = NULL);
 
-    /**
-     * Requests the execution of the CUDA RunTime routine with the arguments
-     * marshalled in the input_buffer.
-     * input_buffer is an optional parameter: if it isn't provided any then
-     * frontend will use the internal one.
-     *
-     * @param routine the name of the routine to execute.
-     * @param input_buffer the buffer containing the parameters of the routine.
-     */
-    void Execute(const char *routine, const communicators::Buffer *input_buffer = NULL);
+  /**
+   * Requests the execution of the CUDA RunTime routine with the arguments
+   * marshalled in the input_buffer.
+   * input_buffer is an optional parameter: if it isn't provided any then
+   * frontend will use the internal one.
+   *
+   * @param routine the name of the routine to execute.
+   * @param input_buffer the buffer containing the parameters of the routine.
+   */
+  void Execute(const char *routine,
+               const communicators::Buffer *input_buffer = NULL);
 
-    /**
-     * Prepares the Frontend for the execution. This method _must_ be called
-     * before any requests of execution or any method for adding parameters for
-     * the next execution.
-     */
-    void Prepare();
+  /**
+   * Prepares the Frontend for the execution. This method _must_ be called
+   * before any requests of execution or any method for adding parameters for
+   * the next execution.
+   */
+  void Prepare();
 
-    inline communicators::Buffer *GetInputBuffer() { return mpInputBuffer.get(); }
+  inline communicators::Buffer *GetInputBuffer() { return mpInputBuffer.get(); }
 
-    inline communicators::Buffer *GetOutputBuffer() { return mpOutputBuffer.get(); }
+  inline communicators::Buffer *GetOutputBuffer() {
+    return mpOutputBuffer.get();
+  }
 
-    inline communicators::Buffer *GetLaunchBuffer() { return mpLaunchBuffer.get(); }
+  inline communicators::Buffer *GetLaunchBuffer() {
+    return mpLaunchBuffer.get();
+  }
 
-    /**
-     * Returns the exit code of the last execution request.
-     *
-     * @return the exit code of the last execution request.
-     */
-    int GetExitCode() { return mExitCode; }
+  /**
+   * Returns the exit code of the last execution request.
+   *
+   * @return the exit code of the last execution request.
+   */
+  int GetExitCode() { return mExitCode; }
 
-    inline bool initialized() { return mpInitialized; }  // should be commented
+  inline bool initialized() { return mpInitialized; }  // should be commented
 
-    /**
-     * Checks if the latest execution had been completed successfully.
-     *
-     * @return True if the last execution had been completed successfully.
-     */
-    bool Success(int success_value = 0) { return mExitCode == success_value; }
+  /**
+   * Checks if the latest execution had been completed successfully.
+   *
+   * @return True if the last execution had been completed successfully.
+   */
+  bool Success(int success_value = 0) { return mExitCode == success_value; }
 
 #if 0
   /**
@@ -213,29 +224,29 @@ class Frontend {
   }
 #endif
 
-   private:
-    /**
-     * Constructs a new Frontend. It creates and sets also the Communicator to
-     * use obtaining the information from the configuration file which path is
-     * setted at compile time.
-     */
-    void Init(communicators::Communicator *c);
-    std::shared_ptr<
-        common::LD_Lib<communicators::Communicator, std::shared_ptr<communicators::Endpoint>>>
-        _communicator;
-    std::shared_ptr<communicators::Buffer> mpInputBuffer;
-    std::shared_ptr<communicators::Buffer> mpOutputBuffer;
-    std::shared_ptr<communicators::Buffer> mpLaunchBuffer;
+ private:
+  /**
+   * Constructs a new Frontend. It creates and sets also the Communicator to
+   * use obtaining the information from the configuration file which path is
+   * setted at compile time.
+   */
+  void Init(communicators::Communicator *c);
+  std::shared_ptr<common::LD_Lib<communicators::Communicator,
+                                 std::shared_ptr<communicators::Endpoint>>>
+      _communicator;
+  std::shared_ptr<communicators::Buffer> mpInputBuffer;
+  std::shared_ptr<communicators::Buffer> mpOutputBuffer;
+  std::shared_ptr<communicators::Buffer> mpLaunchBuffer;
 
-    int mExitCode;
-    static std::map<pthread_t, Frontend *> *mpFrontends;
-    bool mpInitialized;
+  int mExitCode;
+  static std::map<pthread_t, Frontend *> *mpFrontends;
+  bool mpInitialized;
 
-    uint64_t mRoutinesExecuted = 0;
-    uint64_t mDataSent = 0;
-    uint64_t mDataReceived = 0;
-    double mSendingTime = 0.0;
-    double mReceivingTime = 0.0;
-    double mRoutineExecutionTime = 0.0;
+  uint64_t mRoutinesExecuted = 0;
+  uint64_t mDataSent = 0;
+  uint64_t mDataReceived = 0;
+  double mSendingTime = 0.0;
+  double mReceivingTime = 0.0;
+  double mRoutineExecutionTime = 0.0;
 };
 }  // namespace gvirtus::frontend

@@ -46,32 +46,35 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
+
 #include <unistd.h>
 
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
+
+#include <cstdlib>
 
 using namespace std;
 
 namespace gvirtus {
 
-ShmCommunicator::ShmCommunicator(const std::string &communicator) {}
+  ShmCommunicator::ShmCommunicator(const std::string &communicator) {}
 
-ShmCommunicator::ShmCommunicator() {}
+  ShmCommunicator::ShmCommunicator() {}
 
-ShmCommunicator::ShmCommunicator(const char *name) {
+  ShmCommunicator::ShmCommunicator(const char *name) {
     shm_unlink(name);
 
     mFd = shm_open(name, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
-    if (mFd == -1) throw runtime_error("ShmCommunicator: cannot open shared memory");
+    if (mFd == -1)
+      throw runtime_error("ShmCommunicator: cannot open shared memory");
 
     if (ftruncate(mFd, 2 * 1024 * 1024) == -1)
-        throw runtime_error("ShmCommunicator: cannot request size");
+      throw runtime_error("ShmCommunicator: cannot request size");
 
-    mpShm = reinterpret_cast<char *>(
-        mmap(NULL, 2 * 1024 * 1024, PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0));
-    if (mpShm == MAP_FAILED) throw runtime_error("ShmCommunicator: cannot map shared memory");
+    mpShm = reinterpret_cast<char *>(mmap(NULL, 2 * 1024 * 1024, PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0));
+    if (mpShm == MAP_FAILED)
+      throw runtime_error("ShmCommunicator: cannot map shared memory");
 
     size_t offset = 0;
 
@@ -109,24 +112,26 @@ ShmCommunicator::ShmCommunicator(const char *name) {
     mpLocalOut = new char[mIOSize];
     mLocalOutSize = mIOSize;
     mLocalOutOffset = 0;
-}
+  }
 
-ShmCommunicator::~ShmCommunicator() {}
+  ShmCommunicator::~ShmCommunicator() {}
 
-void ShmCommunicator::Serve() {
+  void
+  ShmCommunicator::Serve() {
     struct sockaddr_in addr;
     if ((mSocketFd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-        throw runtime_error("ShmCommunicator: Socket creation error");
+      throw runtime_error("ShmCommunicator: Socket creation error");
     memset((void *)&addr, 0, sizeof(addr));   /* clear server address */
     addr.sin_family = AF_INET;                /* address type is INET */
     addr.sin_port = htons(6666);              /* daytime port is 13 */
     addr.sin_addr.s_addr = htonl(INADDR_ANY); /* connect from anywhere */
     /* bind socket */
     if (bind(mSocketFd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-        throw runtime_error("ShmCommunicator: Bind error");
-}
+      throw runtime_error("ShmCommunicator: Bind error");
+  }
 
-const Communicator *const ShmCommunicator::Accept() const {
+  const Communicator *const
+  ShmCommunicator::Accept() const {
     char name[1024];
     struct sockaddr_in addr;
     socklen_t len = sizeof(addr);
@@ -136,14 +141,15 @@ const Communicator *const ShmCommunicator::Accept() const {
     Communicator *client = new ShmCommunicator(name);
     sendto(mSocketFd, name, 1024, 0, (struct sockaddr *)&addr, sizeof(addr));
     return client;
-}
+  }
 
-void ShmCommunicator::Connect() {
+  void
+  ShmCommunicator::Connect() {
     char name[1024];
     struct sockaddr_in addr;
 
     if ((mSocketFd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-        throw runtime_error("ShmCommunicator: Socket creation error");
+      throw runtime_error("ShmCommunicator: Socket creation error");
     memset((void *)&addr, 0, sizeof(addr)); /* clear server address */
     addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     addr.sin_family = AF_INET;   /* address type is INET */
@@ -154,14 +160,15 @@ void ShmCommunicator::Connect() {
     recvfrom(mSocketFd, name, 1024, 0, NULL, NULL);
 
     mFd = shm_open(name, O_RDWR, S_IRUSR | S_IWUSR);
-    if (mFd == -1) throw runtime_error("ShmCommunicator: cannot open shared memory");
+    if (mFd == -1)
+      throw runtime_error("ShmCommunicator: cannot open shared memory");
 
     if (ftruncate(mFd, 2 * 1024 * 1024) == -1)
-        throw runtime_error("ShmCommunicator: cannot request size");
+      throw runtime_error("ShmCommunicator: cannot request size");
 
-    mpShm = reinterpret_cast<char *>(
-        mmap(NULL, 2 * 1024 * 1024, PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0));
-    if (mpShm == MAP_FAILED) throw runtime_error("ShmCommunicator: cannot map shared memory");
+    mpShm = reinterpret_cast<char *>(mmap(NULL, 2 * 1024 * 1024, PROT_READ | PROT_WRITE, MAP_SHARED, mFd, 0));
+    if (mpShm == MAP_FAILED)
+      throw runtime_error("ShmCommunicator: cannot map shared memory");
 
     size_t offset = 0;
     /* semaphores */
@@ -193,100 +200,109 @@ void ShmCommunicator::Connect() {
     mpLocalOut = new char[mIOSize];
     mLocalOutSize = mIOSize;
     mLocalOutOffset = 0;
-}
+  }
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 
-size_t ShmCommunicator::ReadPacket(char *buffer) {
+  size_t
+  ShmCommunicator::ReadPacket(char *buffer) {
     size_t size;
     sem_wait(mpInFull);
     size = *mpInSize;
     memmove(buffer, mpIn, size);
     sem_post(mpInEmpty);
     return size;
-}
+  }
 
-size_t ShmCommunicator::Read(char *buffer, size_t size) {
+  size_t
+  ShmCommunicator::Read(char *buffer, size_t size) {
     size_t chunk, offset = 0;
 
     /* consume bytes in LocalIn */
     chunk = min(mLocalInSize, size);
     if (chunk > 0) {
-        memmove(buffer, mpLocalIn + mLocalInOffset, chunk);
-        mLocalInSize -= chunk;
-        mLocalInOffset += chunk;
-        offset = chunk;
+      memmove(buffer, mpLocalIn + mLocalInOffset, chunk);
+      mLocalInSize -= chunk;
+      mLocalInOffset += chunk;
+      offset = chunk;
     }
 
     /* read only complete packets */
     while (offset < size && size - offset >= mIOSize) {
-        if ((chunk = ReadPacket(buffer + offset)) == 0) return 0;
-        offset += chunk;
+      if ((chunk = ReadPacket(buffer + offset)) == 0)
+        return 0;
+      offset += chunk;
     }
 
     /* if it is needed some other spare byte we read a full packet storing it
      * in LocalIn */
     if (offset < size) {
-        chunk = size - offset;
-        if ((mLocalInSize = ReadPacket(mpLocalIn)) == 0) return 0;
-        memmove(buffer + offset, mpLocalIn, chunk);
-        mLocalInSize -= chunk;
-        mLocalInOffset = chunk;
-        offset += chunk;
+      chunk = size - offset;
+      if ((mLocalInSize = ReadPacket(mpLocalIn)) == 0)
+        return 0;
+      memmove(buffer + offset, mpLocalIn, chunk);
+      mLocalInSize -= chunk;
+      mLocalInOffset = chunk;
+      offset += chunk;
     }
     return offset;
-}
+  }
 
-size_t ShmCommunicator::Write(const char *buffer, size_t size) {
+  size_t
+  ShmCommunicator::Write(const char *buffer, size_t size) {
     size_t chunk, offset = 0;
 
     /* fill LocalOut if there is something in it */
     if (mLocalOutOffset > 0) {
-        chunk = min(size, mLocalOutSize);
-        memmove(mpLocalOut + mLocalOutOffset, buffer, chunk);
-        mLocalOutSize -= chunk;
-        mLocalOutOffset += chunk;
-        offset = chunk;
+      chunk = min(size, mLocalOutSize);
+      memmove(mpLocalOut + mLocalOutOffset, buffer, chunk);
+      mLocalOutSize -= chunk;
+      mLocalOutOffset += chunk;
+      offset = chunk;
     }
 
     /* sync if localout is full */
-    if (mLocalOutSize == 0) Sync();
+    if (mLocalOutSize == 0)
+      Sync();
 
     /* write only complete packets */
     while (offset < size && size - offset >= mIOSize) {
-        sem_wait(mpOutEmpty);
-        *mpOutSize = mIOSize;
-        memmove(mpOut, buffer + offset, mIOSize);
-        sem_post(mpOutFull);
-        offset += mIOSize;
+      sem_wait(mpOutEmpty);
+      *mpOutSize = mIOSize;
+      memmove(mpOut, buffer + offset, mIOSize);
+      sem_post(mpOutFull);
+      offset += mIOSize;
     }
 
     /* fill LocalOut with spare bytes */
     if (offset < size) {
-        chunk = size - offset;
-        memmove(mpLocalOut, buffer + offset, chunk);
-        mLocalOutSize = mIOSize - chunk;
-        mLocalOutOffset = chunk;
+      chunk = size - offset;
+      memmove(mpLocalOut, buffer + offset, chunk);
+      mLocalOutSize = mIOSize - chunk;
+      mLocalOutOffset = chunk;
     }
 
     return size;
-}
+  }
 
-void ShmCommunicator::Sync() {
-    if (mLocalOutOffset == 0) return;
+  void
+  ShmCommunicator::Sync() {
+    if (mLocalOutOffset == 0)
+      return;
     sem_wait(mpOutEmpty);
     *mpOutSize = mLocalOutOffset;
     memmove(mpOut, mpLocalOut, mLocalOutOffset);
     sem_post(mpOutFull);
     mLocalOutSize = mIOSize;
     mLocalOutOffset = 0;
-}
+  }
 
-void ShmCommunicator::Close() {
+  void
+  ShmCommunicator::Close() {
     sem_wait(mpInEmpty);
     *mpOutSize = 0;
     sem_post(mpOutFull);
-}
+  }
 
-}  // namespace gvirtus
+} // namespace gvirtus
 #endif

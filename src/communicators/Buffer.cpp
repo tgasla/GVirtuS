@@ -32,82 +32,85 @@
  *
  *
  */
-// #define DEBUG
+#define DEBUG
 #include "gvirtus/communicators/Buffer.h"
 
 using namespace std;
 using gvirtus::communicators::Buffer;
 
 Buffer::Buffer(size_t initial_size, size_t block_size) {
-    mSize = initial_size;
-    mBlockSize = block_size;
-    mLength = 0;
-    mOffset = 0;
-    mpBuffer = NULL;
-    mOwnBuffer = true;
-    if (mSize == 0) mSize = 0;
-    if ((mSize = (mSize / mBlockSize) * mBlockSize) == 0) mSize = mBlockSize;
-    if ((mpBuffer = (char *)malloc(mSize)) == NULL) throw runtime_error("Can't allocate memory.");
-    mBackOffset = mLength;
+  mSize = initial_size;
+  mBlockSize = block_size;
+  mLength = 0;
+  mOffset = 0;
+  mpBuffer = NULL;
+  mOwnBuffer = true;
+  if (mSize == 0) mSize = 0;
+  if ((mSize = (mSize / mBlockSize) * mBlockSize) == 0) mSize = mBlockSize;
+  if ((mpBuffer = (char *)malloc(mSize)) == NULL)
+    throw runtime_error("Can't allocate memory.");
+  mBackOffset = mLength;
 }
 
 Buffer::Buffer(const Buffer &orig) {
-    mBlockSize = orig.mBlockSize;
-    mLength = orig.mLength;
-    mSize = orig.mLength;
-    mOffset = orig.mOffset;
-    mLength = orig.mLength;
-    mOwnBuffer = true;
-    if ((mpBuffer = (char *)malloc(mSize)) == NULL) throw runtime_error("Can't allocate memory.");
-    memmove(mpBuffer, orig.mpBuffer, mLength);
-    mBackOffset = mLength;
+  mBlockSize = orig.mBlockSize;
+  mLength = orig.mLength;
+  mSize = orig.mLength;
+  mOffset = orig.mOffset;
+  mLength = orig.mLength;
+  mOwnBuffer = true;
+  if ((mpBuffer = (char *)malloc(mSize)) == NULL)
+    throw runtime_error("Can't allocate memory.");
+  memmove(mpBuffer, orig.mpBuffer, mLength);
+  mBackOffset = mLength;
 }
 
 Buffer::Buffer(istream &in) {
-    in.read((char *)&mSize, sizeof(size_t));
-    mBlockSize = BLOCK_SIZE;
-    mLength = mSize;
-    mOffset = 0;
-    mOwnBuffer = true;
-    if ((mpBuffer = (char *)malloc(mSize)) == NULL) throw runtime_error("Can't allocate memory.");
-    in.read(mpBuffer, mSize);
-    mBackOffset = mLength;
+  in.read((char *)&mSize, sizeof(size_t));
+  mBlockSize = BLOCK_SIZE;
+  mLength = mSize;
+  mOffset = 0;
+  mOwnBuffer = true;
+  if ((mpBuffer = (char *)malloc(mSize)) == NULL)
+    throw runtime_error("Can't allocate memory.");
+  in.read(mpBuffer, mSize);
+  mBackOffset = mLength;
 }
 
 Buffer::Buffer(char *buffer, size_t buffer_size, size_t block_size) {
-    mSize = buffer_size;
-    mBlockSize = block_size;
-    mLength = mSize;
-    mOffset = 0;
-    mpBuffer = buffer;
-    mOwnBuffer = false;
-    mBackOffset = mLength;
+  mSize = buffer_size;
+  mBlockSize = block_size;
+  mLength = mSize;
+  mOffset = 0;
+  mpBuffer = buffer;
+  mOwnBuffer = false;
+  mBackOffset = mLength;
 }
 
 Buffer::~Buffer() {
-    if (mOwnBuffer) free(mpBuffer);
+  if (mOwnBuffer) free(mpBuffer);
 }
 
 void Buffer::Reset() {
-    mLength = 0;
-    mOffset = 0;
-    mBackOffset = 0;
+  mLength = 0;
+  mOffset = 0;
+  mBackOffset = 0;
 }
 
 void Buffer::Reset(Communicator *c) {
-    c->Read((char *)&mLength, sizeof(size_t));
+  c->Read((char *)&mLength, sizeof(size_t));
 #ifdef DEBUG
-    cout << "Read " << mLength << " bytes from the buffer" << endl;
+  cout << "Read " << mLength << " bytes from the buffer" << endl;
 #endif
-    mOffset = 0;
-    mBackOffset = mLength;
-    if (mLength >= mSize) {
-        mSize = (mLength / mBlockSize + 1) * mBlockSize;
-        if ((mpBuffer = (char *)realloc(mpBuffer, mSize)) == NULL)
-            throw runtime_error("Can't reallocate memory.");
-    }
+  mOffset = 0;
+  mBackOffset = mLength;
+  if (mLength >= mSize) {
+    mSize = (mLength / mBlockSize + 1) * mBlockSize;
+    if ((mpBuffer = (char *)realloc(mpBuffer, mSize)) == NULL)
+      throw runtime_error("Can't reallocate memory.");
+  }
 
-    c->Read(mpBuffer, mLength);
+  c->Read(mpBuffer, mLength);
 }
 
 const char *const Buffer::GetBuffer() const { return mpBuffer; }
@@ -115,19 +118,19 @@ const char *const Buffer::GetBuffer() const { return mpBuffer; }
 size_t Buffer::GetBufferSize() const { return mLength; }
 
 void Buffer::Dump(Communicator *c) const {
-    /**
-     *  TO-DO scrivi al message dispatcher che stai per scrivere
-     *  acquisisci il lock
-     *  scrivi
-     *  md->write(communicator out, tid, mpBuffer, mLenght);
-     */
-    c->Write((char *)&mLength, sizeof(size_t));
-    c->Write(mpBuffer, mLength);
-    c->Sync();
+  /**
+   *  TO-DO scrivi al message dispatcher che stai per scrivere
+   *  acquisisci il lock
+   *  scrivi
+   *  md->write(communicator out, tid, mpBuffer, mLenght);
+   */
+  c->Write((char *)&mLength, sizeof(size_t));
+  c->Write(mpBuffer, mLength);
+  c->Sync();
 
-    /**
-     * TO-DO rilascia il lock
-     * notifica
-     *
-     */
+  /**
+   * TO-DO rilascia il lock
+   * notifica
+   *
+   */
 }
