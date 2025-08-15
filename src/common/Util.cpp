@@ -48,29 +48,29 @@ Util::Util(const Util &orig) {}
 Util::~Util() {}
 
 char *Util::MarshalHostPointer(const void *ptr) {
-    char *marshal = new char[Util::MarshaledHostPointerSize];
-    MarshalHostPointer(ptr, marshal);
-    return marshal;
+  char *marshal = new char[Util::MarshaledHostPointerSize];
+  MarshalHostPointer(ptr, marshal);
+  return marshal;
 }
 
 void Util::MarshalHostPointer(const void *ptr, char *marshal) {
 #ifdef _WIN32
-    sprintf_s(marshal, 10, "%p", ptr);
+  sprintf_s(marshal, 10, "%p", ptr);
 #else
-    sprintf(marshal, "%p", ptr);
+  sprintf(marshal, "%p", ptr);
 #endif
 }
 
 char *Util::MarshalDevicePointer(const void *devPtr) {
-    char *marshal = new char[Util::MarshaledDevicePointerSize];
-    MarshalDevicePointer(devPtr, marshal);
-    return marshal;
+  char *marshal = new char[Util::MarshaledDevicePointerSize];
+  MarshalDevicePointer(devPtr, marshal);
+  return marshal;
 }
 
 void Util::MarshalDevicePointer(const void *devPtr, char *marshal) {
 #ifdef _WIN32
-    sprintf_s(marshal, 10, "%p", devPtr);
+  sprintf_s(marshal, 10, "%p", devPtr);
 #else
-    sprintf(marshal, "%p", devPtr);
+  sprintf(marshal, "%p", devPtr);
 #endif
 }

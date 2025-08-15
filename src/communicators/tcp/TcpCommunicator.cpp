@@ -32,7 +32,7 @@
  *
  *
  */
-// #define DEBUG
+//#define DEBUG
 
 #include "TcpCommunicator.h"
 
@@ -63,17 +63,18 @@ using gvirtus::communicators::TcpCommunicator;
 TcpCommunicator::TcpCommunicator(const std::string &communicator) {
 #ifdef _WIN32
     if (!initialized) {
-        WSADATA data;
-        if (WSAStartup(MAKEWORD(2, 2), &data) != 0)
-            throw runtime_error("Cannot initialized WinSock.");
-        initialized = true;
+      WSADATA data;
+      if (WSAStartup(MAKEWORD(2, 2), &data) != 0)
+        throw runtime_error("Cannot initialized WinSock.");
+      initialized = true;
     }
 #endif
 
     const char *valueptr = strstr(communicator.c_str(), "://") + 3;
     const char *portptr = strchr(valueptr, ':');
-    if (portptr == NULL) throw runtime_error("Port not specified.");
-    mPort = (short)strtol(portptr + 1, NULL, 10);
+    if (portptr == NULL)
+        throw runtime_error("Port not specified.");
+    mPort = (short) strtol(portptr + 1, NULL, 10);
 
 #ifdef _WIN32
     char *hostname = _strdup(valueptr);
@@ -121,10 +122,9 @@ void TcpCommunicator::Serve() {
     struct sockaddr_in socket_addr;
 
     if ((mSocketFd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
-        throw runtime_error("TcpCommunicator: Can't create socket: " + string(strerror(errno)) +
-                            ".");
+        throw runtime_error("TcpCommunicator: Can't create socket: " + string(strerror(errno)) + ".");
 
-    memset((char *)&socket_addr, 0, sizeof(struct sockaddr_in));
+    memset((char *) &socket_addr, 0, sizeof(struct sockaddr_in));
 
     socket_addr.sin_family = AF_INET;
     socket_addr.sin_port = htons(mPort);
@@ -133,14 +133,13 @@ void TcpCommunicator::Serve() {
     char on = 1;
     setsockopt(mSocketFd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 
-    int bindResult = bind(mSocketFd, (struct sockaddr *)&socket_addr, sizeof(struct sockaddr_in));
+    int bindResult = bind(mSocketFd, (struct sockaddr *) &socket_addr, sizeof(struct sockaddr_in));
     if (bindResult != 0)
         throw runtime_error("TcpCommunicator: Can't bind socket: " + string(strerror(errno)) + ".");
 
     int listenResult = listen(mSocketFd, 5);
     if (listenResult != 0)
-        throw runtime_error(
-            "TcpCommunicator: Can't listen from socket: " + string(strerror(errno)) + ".");
+        throw runtime_error("TcpCommunicator: Can't listen from socket: " + string(strerror(errno)) + ".");
 
 #ifdef DEBUG
     cout << "TcpCommunicator::Serve() returned" << endl;
@@ -161,9 +160,7 @@ const gvirtus::communicators::Communicator *const TcpCommunicator::Accept() cons
 #endif
 
     client_socket_addr_size = sizeof(struct sockaddr_in);
-    if ((client_socket_fd =
-             accept(mSocketFd, (sockaddr *)&client_socket_addr, &client_socket_addr_size)) == 0 ||
-        errno == EINTR) {
+    if ((client_socket_fd = accept(mSocketFd, (sockaddr * ) & client_socket_addr, &client_socket_addr_size)) == 0 || errno == EINTR) {
         return nullptr;
     }
 
@@ -175,22 +172,20 @@ const gvirtus::communicators::Communicator *const TcpCommunicator::Accept() cons
 
 void TcpCommunicator::Connect() {
 #ifdef DEBUG
-    cout << "TcpCommunicator::Connect() called " < < < < endl;
+    cout << "TcpCommunicator::Connect() called " <<  << endl;
 #endif
 
     struct sockaddr_in remote;
 
     if ((mSocketFd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
-        throw runtime_error("TcpCommunicator: Can't create socket: " + string(strerror(errno)) +
-                            ".");
+        throw runtime_error("TcpCommunicator: Can't create socket: " + string(strerror(errno)) + ".");
 
     remote.sin_family = AF_INET;
     remote.sin_port = htons(mPort);
     memcpy(&remote.sin_addr, mInAddr, mInAddrSize);
 
-    if (connect(mSocketFd, (struct sockaddr *)&remote, sizeof(struct sockaddr_in)) != 0)
-        throw runtime_error("TcpCommunicator: Can't connect to socket: " + string(strerror(errno)) +
-                            ".");
+    if (connect(mSocketFd, (struct sockaddr *) &remote, sizeof(struct sockaddr_in)) != 0)
+        throw runtime_error("TcpCommunicator: Can't connect to socket: " + string(strerror(errno)) + ".");
 
     InitializeStream();
 
@@ -232,6 +227,7 @@ size_t TcpCommunicator::Write(const char *buffer, size_t size) {
 
     mpOutput->write(buffer, size);
 
+
 #ifdef DEBUG
     for (unsigned int i = 0; i < size; i++) printf("%d SCRITTO %02X \n", i, buffer[i]);
 #endif
@@ -243,7 +239,9 @@ size_t TcpCommunicator::Write(const char *buffer, size_t size) {
     return size;
 }
 
-void TcpCommunicator::Sync() { mpOutput->flush(); }
+void TcpCommunicator::Sync() {
+    mpOutput->flush();
+}
 
 void TcpCommunicator::InitializeStream() {
 #ifdef _WIN32
@@ -260,12 +258,12 @@ void TcpCommunicator::InitializeStream() {
     mpOutput = new ostream(mpOutputBuf);
 }
 
-extern "C" std::shared_ptr<TcpCommunicator> create_communicator(
-    std::shared_ptr<gvirtus::communicators::Endpoint> end) {
+extern "C" std::shared_ptr <TcpCommunicator> create_communicator(
+        std::shared_ptr <gvirtus::communicators::Endpoint> end) {
     std::string arg =
-        "tcp://" + std::dynamic_pointer_cast<gvirtus::communicators::Endpoint_Tcp>(end)->address() +
-        ":" +
-        std::to_string(
-            std::dynamic_pointer_cast<gvirtus::communicators::Endpoint_Tcp>(end)->port());
+            "tcp://" +
+            std::dynamic_pointer_cast<gvirtus::communicators::Endpoint_Tcp>(end) ->address() +
+            ":" +
+            std::to_string(std::dynamic_pointer_cast<gvirtus::communicators::Endpoint_Tcp>(end)->port());
     return std::make_shared<TcpCommunicator>(arg);
 }

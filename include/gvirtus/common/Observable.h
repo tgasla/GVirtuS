@@ -46,17 +46,17 @@ namespace gvirtus::common {
  * Observable emits signal that can be catched by registred Observer(s).
  */
 class Observable {
-   public:
-    Observable();
-    virtual ~Observable();
-    void AddObserver(std::string &event, const Observer *observer);
-    void AddObserver(const char *event, const Observer *observer);
+ public:
+  Observable();
+  virtual ~Observable();
+  void AddObserver(std::string &event, const Observer *observer);
+  void AddObserver(const char *event, const Observer *observer);
 
-   protected:
-    void Notify(std::string &event);
-    void Notify(const char *event);
+ protected:
+  void Notify(std::string &event);
+  void Notify(const char *event);
 
-   private:
-    std::map<std::string, std::vector<Observer *> *> *mObservers;
+ private:
+  std::map<std::string, std::vector<Observer *> *> *mObservers;
 };
-}  // namespace gvirtus::common
+}

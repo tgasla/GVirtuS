@@ -5,43 +5,43 @@
 #include <string>
 #include <thread>
 #include <vector>
-
+#include <unistd.h>
 #include "Process.h"
 #include "Property.h"
 #include "log4cplus/configurator.h"
 #include "log4cplus/logger.h"
 #include "log4cplus/loggingmacros.h"
 
-// #define DEBUG
+#define DEBUG
 
 namespace gvirtus::backend {
 
-static int activeChilds = 0;
+    static int activeChilds = 0;
 
-static void sigint_handler(int sig) {}
+    static void sigint_handler(int sig) {}
 
 /**
  * Backend is the main object of gvirtus-backend. It is responsible of accepting
  * the connection from the Frontend(s) and spawing a new Process for handling
  * each Frontend.
  */
-class Backend : public common::Observer {
-   public:
-    Backend(const fs::path &path);
+    class Backend : public common::Observer {
+    public:
+        Backend(const fs::path &path);
 
-    /**
-     * Starts the Backend. The call to Start() will make the Backend to serve
-     * forever.
-     */
-    void Start();
+        /**
+         * Starts the Backend. The call to Start() will make the Backend to serve
+         * forever.
+         */
+        void Start();
 
-    void EventOccurred(std::string &event, void *object);
+        void EventOccurred(std::string &event, void *object);
 
-    virtual ~Backend() = default;
+        virtual ~Backend() = default;
 
-   private:
-    std::vector<std::unique_ptr<Process>> _children;
-    Property _properties;
-    log4cplus::Logger logger;
-};
+    private:
+        std::vector<std::unique_ptr<Process>> _children;
+        Property _properties;
+        log4cplus::Logger logger;
+    };
 }  // namespace gvirtus::backend

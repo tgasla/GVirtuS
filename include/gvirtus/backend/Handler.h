@@ -36,24 +36,23 @@
 #pragma once
 
 #include <gvirtus/communicators/Result.h>
-
 #include <memory>
-
 #include "log4cplus/configurator.h"
 #include "log4cplus/logger.h"
 #include "log4cplus/loggingmacros.h"
 
 namespace gvirtus::backend {
 class Handler {
-   protected:
-    using create_t = std::shared_ptr<Handler>();
+ protected:
+  using create_t = std::shared_ptr<Handler>();
 
-   public:
-    virtual bool CanExecute(std::string routine) = 0;
-    virtual std::shared_ptr<communicators::Result> Execute(
-        std::string routine, std::shared_ptr<communicators::Buffer> input_buffer) = 0;
+ public:
+  virtual bool CanExecute(std::string routine) = 0;
+  virtual std::shared_ptr<communicators::Result> Execute(
+      std::string routine,
+      std::shared_ptr<communicators::Buffer> input_buffer) = 0;
 
-   private:
-    log4cplus::Logger logger;
+ private:
+  log4cplus::Logger logger;
 };
 }  // namespace gvirtus::backend

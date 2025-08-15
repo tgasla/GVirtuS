@@ -3,24 +3,19 @@
 //
 
 #include "gvirtus/communicators/Endpoint_Rdma.h"
-
-#include <regex>
-
-#include "gvirtus/communicators/EndpointFactory.h"
 #include "gvirtus/communicators/Endpoint_Tcp.h"
+#include <regex>
+#include "gvirtus/communicators/EndpointFactory.h"
 
-gvirtus::communicators::Endpoint_Rdma::Endpoint_Rdma(const std::string &endp_suite,
-                                                     const std::string &endp_protocol,
-                                                     const std::string &endp_address,
-                                                     const std::string &endp_port) {
+gvirtus::communicators::Endpoint_Rdma::Endpoint_Rdma(const std::string &endp_suite, const std::string &endp_protocol,
+                                                     const std::string &endp_address, const std::string &endp_port) {
     suite(endp_suite);
     protocol(endp_protocol);
     address(endp_address);
     port(endp_port);
 }
 
-gvirtus::communicators::Endpoint &gvirtus::communicators::Endpoint_Rdma::suite(
-    const std::string &suite) {
+gvirtus::communicators::Endpoint &gvirtus::communicators::Endpoint_Rdma::suite(const std::string &suite) {
     std::regex pattern{R"([[:alpha:]]*-[[:alpha:]]*)"};
 
     std::smatch matches;
@@ -32,8 +27,8 @@ gvirtus::communicators::Endpoint &gvirtus::communicators::Endpoint_Rdma::suite(
     return *this;
 }
 
-gvirtus::communicators::Endpoint &gvirtus::communicators::Endpoint_Rdma::protocol(
-    const std::string &protocol) {
+
+gvirtus::communicators::Endpoint &gvirtus::communicators::Endpoint_Rdma::protocol(const std::string &protocol) {
     std::regex pattern{R"([[:alpha:]]*)"};
 
     std::smatch matches;
@@ -45,10 +40,9 @@ gvirtus::communicators::Endpoint &gvirtus::communicators::Endpoint_Rdma::protoco
     return *this;
 }
 
-gvirtus::communicators::Endpoint_Rdma &gvirtus::communicators::Endpoint_Rdma::address(
-    const std::string &address) {
+gvirtus::communicators::Endpoint_Rdma &gvirtus::communicators::Endpoint_Rdma::address(const std::string &address) {
     std::regex pattern{
-        R"(^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$)"};
+            R"(^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$)"};
     std::smatch matches;
 
     std::regex_search(address, matches, pattern);
@@ -58,10 +52,9 @@ gvirtus::communicators::Endpoint_Rdma &gvirtus::communicators::Endpoint_Rdma::ad
     return *this;
 }
 
-gvirtus::communicators::Endpoint_Rdma &gvirtus::communicators::Endpoint_Rdma::port(
-    const std::string &port) {
+gvirtus::communicators::Endpoint_Rdma &gvirtus::communicators::Endpoint_Rdma::port(const std::string &port) {
     std::regex pattern{
-        R"((6553[0-5]|655[0-2][0-9]\d|65[0-4](\d){2}|6[0-4](\d){3}|[1-5](\d){4}|[1-9](\d){0,3}))"};
+            R"((6553[0-5]|655[0-2][0-9]\d|65[0-4](\d){2}|6[0-4](\d){3}|[1-5](\d){4}|[1-9](\d){0,3}))"};
 
     std::smatch matches;
 

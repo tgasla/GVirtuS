@@ -17,33 +17,33 @@ namespace gvirtus::common {
 typedef enum { step_A, step_B, step_C } EncodeStep;
 
 class Encoder {
-   public:
-    Encoder();
+ public:
+  Encoder();
 
-    Encoder(const Encoder &orig);
+  Encoder(const Encoder &orig);
 
-    virtual ~Encoder();
+  virtual ~Encoder();
 
-    int Encode(char value_in);
+  int Encode(char value_in);
 
-    int Encode(const char *, int, char *);
+  int Encode(const char *, int, char *);
 
-    void Encode(std::istream &, std::ostream &);
+  void Encode(std::istream &, std::ostream &);
 
-   private:
-    int CHARS_PER_LINE;
+ private:
+  int CHARS_PER_LINE;
 
-    int _buffersize;
-    EncodeStep step;
-    char result;
-    int stepcount;
+  int _buffersize;
+  EncodeStep step;
+  char result;
+  int stepcount;
 
-    int Value(char value_in);
+  int Value(char value_in);
 
-    int Block(const char *code_in, const int length_in, char *plaintext_out);
+  int Block(const char *code_in, const int length_in, char *plaintext_out);
 
-    int BlockEnd(char *code_out);
+  int BlockEnd(char *code_out);
 
-    int EncodeEnd(char *code_out);
+  int EncodeEnd(char *code_out);
 };
 }  // namespace gvirtus::common

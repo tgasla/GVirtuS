@@ -1,12 +1,15 @@
 {
     "communicator": [
         {
-            "endpoint": {
-                "suite": "tcp/ip",
-                "protocol": "tcp",
-                "server_address": "0.0.0.0",
-                "port": "9999"
-            },
+      "endpoint": {
+        "suite": "hybrid",
+        "protocol": "hybrid",
+        "server_address": "24.24.24.1",
+        "rdma_suite": "roce-rdma",
+        "rdma_port": "6677",
+        "tcp_suite": "tcp",
+        "tcp_port": "6767"
+      },
             "plugins": [
                 "cuda",
                 "cudart",

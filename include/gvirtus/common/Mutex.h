@@ -42,16 +42,17 @@ namespace gvirtus::common {
  * Mutex can be used to implement the mutual exclusion on blocks of code.
  */
 class Mutex {
-   public:
-    Mutex();
-    virtual ~Mutex();
-    bool Lock();
-    void Unlock();
+ public:
+  Mutex();
+  virtual ~Mutex();
+  bool Lock();
+  void Unlock();
 
-   private:
-    pthread_mutex_t mMutex;
+ private:
+  pthread_mutex_t mMutex;
 };
 
-#define synchronized(mutex) \
-    for (bool __mutex_lock = (mutex).Lock(); __mutex_lock; __mutex_lock = false, (mutex).Unlock())
-}  // namespace gvirtus::common
+#define synchronized(mutex)                              \
+  for (bool __mutex_lock = (mutex).Lock(); __mutex_lock; \
+       __mutex_lock = false, (mutex).Unlock())
+}

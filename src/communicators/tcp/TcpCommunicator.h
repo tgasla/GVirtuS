@@ -48,37 +48,37 @@ namespace gvirtus::communicators {
  * TcpCommunicator implements a Communicator for the TCP/IP socket.
  */
 class TcpCommunicator : public Communicator {
-   public:
-    TcpCommunicator() = default;
-    TcpCommunicator(const std::string &communicator);
-    TcpCommunicator(const char *hostname, short port);
-    TcpCommunicator(int fd, const char *hostname);
-    virtual ~TcpCommunicator();
-    void Serve();
-    const Communicator *const Accept() const;
-    void Connect();
-    size_t Read(char *buffer, size_t size);
-    size_t Write(const char *buffer, size_t size);
-    void Sync();
-    void Close();
+ public:
+  TcpCommunicator() = default;
+  TcpCommunicator(const std::string &communicator);
+  TcpCommunicator(const char *hostname, short port);
+  TcpCommunicator(int fd, const char *hostname);
+  virtual ~TcpCommunicator();
+  void Serve();
+  const Communicator *const Accept() const;
+  void Connect();
+  size_t Read(char *buffer, size_t size);
+  size_t Write(const char *buffer, size_t size);
+  void Sync();
+  void Close();
 
-    std::string to_string() override { return "tcpcommunicator"; }
+  std::string to_string() override { return "tcpcommunicator"; }
 
-   private:
-    void InitializeStream();
-    std::istream *mpInput;
-    std::ostream *mpOutput;
-    std::string mHostname;
-    char *mInAddr;
-    int mInAddrSize;
-    short mPort;
-    int mSocketFd;
+ private:
+  void InitializeStream();
+  std::istream *mpInput;
+  std::ostream *mpOutput;
+  std::string mHostname;
+  char *mInAddr;
+  int mInAddrSize;
+  short mPort;
+  int mSocketFd;
 #ifdef _WIN32
-    std::filebuf *mpInputBuf;
-    std::filebuf *mpOutputBuf;
+  std::filebuf *mpInputBuf;
+  std::filebuf *mpOutputBuf;
 #else
-    __gnu_cxx::stdio_filebuf<char> *mpInputBuf;
-    __gnu_cxx::stdio_filebuf<char> *mpOutputBuf;
+  __gnu_cxx::stdio_filebuf<char> *mpInputBuf;
+  __gnu_cxx::stdio_filebuf<char> *mpOutputBuf;
 #endif
 };
 }  // namespace gvirtus::communicators

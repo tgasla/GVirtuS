@@ -42,10 +42,10 @@ namespace gvirtus::common {
  * Observer object can receive the events emitted by Observable.
  */
 class Observer {
-   public:
-    virtual ~Observer();
-    virtual void EventOccurred(std::string &event, void *object) = 0;
+ public:
+  virtual ~Observer();
+  virtual void EventOccurred(std::string &event, void *object) = 0;
 
-   private:
+ private:
 };
-}  // namespace gvirtus::common
+}
